@@ -47,8 +47,8 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/config/statping` - Data storage
-- `./rootfs/data/statping` - Data storage
+- `./volumes/config/statping` - Data storage
+- `./volumes/data/statping` - Data storage
 
 ## 🔍 Logging
 
