@@ -24,7 +24,7 @@ services:
     environment:
       TZ: ${TZ:-America/New_York}
       ADMIN_USER: ${APP_ADMIN_USER:-admin}
-      ADMIN_PASS: ${APP_ADMIN_PASS:-changeme_admin_password}
+      ADMIN_PASSWORD: ${APP_ADMIN_PASS:-changeme_admin_password}
       ADMIN_EMAIL: ${APP_ADMIN_USER:-admin@example.com}
       DB_CONN: ${DB_CONN:-sqlite}
       NAME: ${APP_ORG_NAME:-Statping}
