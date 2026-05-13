@@ -17,6 +17,8 @@ services:
     logging: *default-logging
     networks:
       - statping
+      - proxy
+      - cloudflare
     ports:
       - "172.17.0.1:8097:8080"
     environment:
@@ -27,6 +29,8 @@ services:
       DB_CONN: ${DB_CONN:-sqlite}
       NAME: ${APP_NAME:-Statping}
       DESCRIPTION: ${APP_DESCRIPTION:-Status page for monitoring}
+      CONTAINER_NAME: statping-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
     volumes:
       - ./volumes/data/statping:/app
     healthcheck:
@@ -34,8 +38,28 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    labels:
+      - 'traefik.enable=true'
+      - 'cloudflare.enable=true'
+      - 'traefik.docker.network=proxy'
+      - 'cloudflare.service=http://statping-app:8080'
+      - 'cloudflare.hostname=statping.${CLOUDFLARE_ZONE_NAME:-}'
+      - 'traefik.http.routers.statping-app.entrypoints=http'
+      - 'traefik.http.routers.statping-app-secure.tls=true'
+      - 'traefik.http.routers.statping-app.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.middlewares.statping-app-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.statping-app.middlewares=statping-app-https-redirect'
+      - 'traefik.http.routers.statping-app-secure.entrypoints=https'
+      - 'traefik.http.routers.statping-app-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.routers.statping-app-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.statping-app-secure.service=statping-app'
+      - 'traefik.http.services.statping-app.loadbalancer.server.port=8080'
 
 networks:
   statping:
     name: statping
     external: false
+  proxy:
+    external: true
+  cloudflare:
+    external: true
