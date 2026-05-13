@@ -27,7 +27,7 @@ services:
       ADMIN_PASS: ${APP_ADMIN_PASS:-changeme_admin_password}
       ADMIN_EMAIL: ${APP_ADMIN_EMAIL:-admin@example.com}
       DB_CONN: ${DB_CONN:-sqlite}
-      NAME: ${APP_NAME:-Statping}
+      NAME: ${APP_ORG_NAME:-Statping}
       DESCRIPTION: ${APP_DESCRIPTION:-Status page for monitoring}
       CONTAINER_NAME: statping-app
       HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
