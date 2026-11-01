@@ -1,65 +1,44 @@
-# nginx proxy address - http://172.17.0.1:8097
+# nginx proxy address - http://172.17.0.1:64354
 
 name: statping
 x-logging: &default-logging
-  driver: json-file
   options:
-    max-size: "5m"
-    max-file: "1"
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
 
 services:
-  statping:
+  app:
     image: adamboutcher/statping-ng:latest
-    pull_policy: always
     container_name: statping-app
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
     hostname: ${BASE_HOST_NAME:-$HOSTNAME}
     restart: always
+    pull_policy: always
     logging: *default-logging
-    networks:
-      - statping
-      - proxy
-      - cloudflare
-    ports:
-      - "172.17.0.1:8097:8080"
     environment:
       TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: statping-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
       ADMIN_USER: ${APP_ADMIN_USER:-admin}
-      ADMIN_PASSWORD: ${APP_ADMIN_PASS:-changeme_admin_password}
-      ADMIN_EMAIL: ${APP_ADMIN_USER:-admin@example.com}
+      ADMIN_PASSWORD: ${APP_ADMIN_PASS:-replace-with-a-random-password}
+      ADMIN_EMAIL: ${APP_ADMIN_USER:-admin}@${BASE_DOMAIN_NAME:-example.com}
       DB_CONN: ${DB_CONN:-sqlite}
       NAME: ${APP_ORG_NAME:-Statping}
       DESCRIPTION: ${APP_DESCRIPTION:-Status page for monitoring}
-      CONTAINER_NAME: statping-app
-      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
+    ports:
+      - '172.17.0.1:64354:8080'
     volumes:
-      - ./volumes/data/statping:/app
+      - './volumes/data/statping:/app:z'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:8080/health']
       interval: 30s
       timeout: 10s
       retries: 3
-    labels:
-      - 'traefik.enable=true'
-      - 'cloudflare.enable=true'
-      - 'traefik.docker.network=proxy'
-      - 'cloudflare.service=http://statping-app:8080'
-      - 'cloudflare.hostname=statping.${CLOUDFLARE_ZONE_NAME:-}'
-      - 'traefik.http.routers.statping-app.entrypoints=http'
-      - 'traefik.http.routers.statping-app-secure.tls=true'
-      - 'traefik.http.routers.statping-app.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
-      - 'traefik.http.middlewares.statping-app-https-redirect.redirectscheme.scheme=https'
-      - 'traefik.http.routers.statping-app.middlewares=statping-app-https-redirect'
-      - 'traefik.http.routers.statping-app-secure.entrypoints=https'
-      - 'traefik.http.routers.statping-app-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
-      - 'traefik.http.routers.statping-app-secure.tls.certresolver=cloudflare'
-      - 'traefik.http.routers.statping-app-secure.service=statping-app'
-      - 'traefik.http.services.statping-app.loadbalancer.server.port=8080'
+    networks:
+      - statping
 
 networks:
   statping:
     name: statping
     external: false
-  proxy:
-    external: true
-  cloudflare:
-    external: true

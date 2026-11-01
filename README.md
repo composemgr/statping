@@ -1,14 +1,25 @@
-## 👋 Welcome to statping 🚀
+## 👋 Welcome to Statping-NG 📊
 
-Status page and uptime monitoring
+Status page monitoring with uptime checks and incident history
 
 ## 📋 Description
 
-Status page and uptime monitoring
+Statping-NG is a self-hosted status page and uptime monitor. It pings your
+services on a schedule, records the response history, and serves a public
+status page plus a JSON API. This stack runs the official container image
+with an embedded SQLite database, so there is no external datastore to
+manage.
 
 ## 🚀 Services
 
-- **statping**: statping/statping:latest
+- **app**: adamboutcher/statping-ng:latest
+
+### Infrastructure Components
+
+None. Statping-NG defaults to `DB_CONN=sqlite` and stores the database under
+its `/app` mount. Setting `DB_CONN` to `mysql` or `postgres` in `app.env`
+switches the backend, but this stack does not ship a database container for
+either.
 
 ## 📦 Installation
 
@@ -21,7 +32,8 @@ curl -q -LSsf "https://raw.githubusercontent.com/composemgr/statping/main/docker
 ```bash
 git clone "https://github.com/composemgr/statping" ~/.local/srv/docker/statping
 cd ~/.local/srv/docker/statping
-docker compose up -d
+cp default.env .env
+docker compose --env-file .env up -d
 ```
 
 ### Option 3: Using composemgr
@@ -35,44 +47,96 @@ composemgr install statping
 
 ```shell
 TZ=America/New_York
-SERVICE_USER=1000
-SERVICE_GROUP=1000
+APP_ORG_NAME=Statping
+APP_DESCRIPTION=Status page for monitoring
+APP_ADMIN_USER=admin
+APP_ADMIN_PASS=replace-with-a-random-password
+DB_CONN=sqlite
 ```
+
+`APP_ORG_NAME` becomes `NAME` and `APP_DESCRIPTION` becomes `DESCRIPTION`,
+which are the site title and tagline on the public status page.
 
 See `docker-compose.yaml` for complete list of configurable options.
 
+### Environment Files
+
+`default.env.sample` holds the full set of variables and is copied to `.env`
+before starting the stack:
+
+```bash
+cp default.env .env
+docker compose --env-file .env up -d
+```
+
+`app.env.sample` holds the app-specific overrides and is copied to `app.env`:
+
+```bash
+cp app.env.sample app.env
+```
+
+`composemgr up` applies `app.env` and `default.env` automatically. Raw
+`docker compose` commands need `--env-file .env` to pick up the same values.
+
+### Reverse Proxy
+
+Three standalone compose files ship in this repo:
+
+| File | Use |
+|------|-----|
+| `docker-compose.yaml` | Default, published on `172.17.0.1:64354` |
+| `docker-compose.traefik.yaml` | Behind an existing external `traefik` network |
+| `docker-compose.tunnel.yaml` | Behind an existing external `cloudflare` tunnel network |
+
+```bash
+docker compose -f docker-compose.traefik.yaml --env-file .env up -d
+```
+
 ## 🌐 Access
 
-- **Web Interface**: http://172.17.0.1:8097
+- **Web Interface**: http://172.17.0.1:64354
 
 ## 📂 Volumes
 
-- `./volumes/config/statping` - Data storage
-- `./volumes/data/statping` - Data storage
+- `./volumes/data/statping` - Statping-NG `/app`, holding the SQLite database
+  and any uploaded assets
+
+## 🔐 Security
+
+- Change `APP_ADMIN_PASS` before the first start, it is used to seed the admin
+  account on an empty database
+- Use HTTPS via the reverse proxy in production, the status page API exposes
+  check history and is public
+- Only publish the status page if you intend it to be reachable, the
+  default file binds it to `172.17.0.1`
+- The healthcheck endpoint is at `/health` and is safe to expose to the proxy
+- Regularly update Docker images for security patches
+- Back up `./volumes/data/statping`, it holds the entire monitor state and
+  history
 
 ## 🔍 Logging
 
 ```shell
-docker compose logs -f statping
+docker compose --env-file .env logs -f app
 ```
 
 ## 🛠️ Management
 
 ```bash
 # Start services
-docker compose up -d
+docker compose --env-file .env up -d
 
 # Stop services
-docker compose down
+docker compose --env-file .env down
 
 # Update to latest images
-docker compose pull && docker compose up -d
+docker compose --env-file .env pull && docker compose --env-file .env up -d
 
 # View logs
-docker compose logs -f
+docker compose --env-file .env logs -f
 
 # Restart services
-docker compose restart
+docker compose --env-file .env restart
 ```
 
 ## 📋 Requirements
